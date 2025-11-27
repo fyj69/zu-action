@@ -343,9 +343,10 @@ runs:
         fi
 
         if [[ -d */kernel/kpm ]]; then
-            echo -e "CONFIG_KPM=y\nCONFIG_KSU_MANUAL_HOOK=y\nCONFIG_KALLSYMS=y\nCONFIG_KALLSYMS_ALL=y" >> arch/${{ inputs.arch }}/configs/${{ inputs.config }}
-            sed -i -e '20d' -e '18d' KernelSU/kernel/sucompat.c
-            sed -i 's/#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0))/#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))/' KernelSU/kernel/kpm/super_access.c
+            echo -e "CONFIG_KPM=y" >> arch/${{ inputs.arch }}/configs/${{ inputs.config }}
+            #echo -e "CONFIG_KPM=y\nCONFIG_KSU_MANUAL_HOOK=y\nCONFIG_KALLSYMS=y\nCONFIG_KALLSYMS_ALL=y" >> arch/${{ inputs.arch }}/configs/${{ inputs.config }}
+            #sed -i -e '20d' -e '18d' KernelSU/kernel/sucompat.c
+            #sed -i 's/#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0))/#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))/' KernelSU/kernel/kpm/super_access.c
         fi
 
         if [ "${{ inputs.zram }}" == "true" ]; then
