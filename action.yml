@@ -343,7 +343,7 @@ runs:
         fi
 
         if compgen -G "*/kernel/kpm"; then
-            echo -e "CONFIG_KPM=y" >> arch/${{ inputs.arch }}/configs/${{ inputs.config }}
+            echo -e "CONFIG_KPM=y\nCONFIG_KSU_MANUAL_HOOK=y\nCONFIG_KALLSYMS=y\nCONFIG_KALLSYMS_ALL=y" >> arch/${{ inputs.arch }}/configs/${{ inputs.config }}
             find . -type f -name super_access.c -exec sed -i '/DEFINE_MEMBER(task_struct, security)/d' {} +
         fi
 
