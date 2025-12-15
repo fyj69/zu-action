@@ -541,7 +541,7 @@ runs:
 
     - id: uploadi
       if: ${{ inputs.release == 'false' && inputs.anykernel3 == 'false' }}
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: kernel-built-bootimg
         path: build/*
@@ -550,7 +550,7 @@ runs:
 
     - id: uploada
       if: ${{ inputs.release == 'false' && inputs.anykernel3 == 'true' }}
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@v6
       with:
         name: Anykernel3-flasher
         path: build/*
