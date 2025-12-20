@@ -84,6 +84,9 @@ inputs:
   kvm:
     required: false
     default: false
+  bbg:
+    required: false
+    default: false    
   ccache:
     required: false
     default: false
@@ -309,6 +312,7 @@ runs:
             NONGKI=true
         fi
 
+        CONFIG_FILE="arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
         if [ "${{ inputs.ksu }}" == "true" ]; then
             echo "::group::Initializing KernelSU"
             rm -rf *KernelSU* drivers/kernelsu 2>/dev/null || true
@@ -324,7 +328,6 @@ runs:
                 fi
                 curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s "$KVER"
             fi
-            CONFIG_FILE="arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
             grep -q "CONFIG_KSU=y" "$CONFIG_FILE" || echo "CONFIG_KSU=y" >> "$CONFIG_FILE"
             grep -q "kernelsu" drivers/Makefile || printf "\nobj-\$(CONFIG_KSU) += kernelsu/\n" >> drivers/Makefile
             grep -q "source \"drivers/kernelsu/Kconfig\"" drivers/Kconfig || sed -i '/endmenu/i\source \"drivers/kernelsu/Kconfig\"' drivers/Kconfig
@@ -342,6 +345,14 @@ runs:
                     curl -sSLf "https://github.com/dabao1955/kernel_build_action/raw/main/kernelsu/apply_cocci.sh" -o /tmp/patch.sh && bash /tmp/patch.sh && rm -f /tmp/patch.sh
                 fi
             fi
+            echo "::endgroup::"
+        fi
+
+        if [ "${{ inputs.bbg }}" == "true" ]; then
+            echo "::group::Initializing BBG"
+            curl -Ss https://github.com/vc-teahouse/Baseband-guard/raw/main/setup.sh | bash
+            sed -i '/^config LSM$/,/^help$/{ /^[[:space:]]*default/ { /baseband_guard/! s/lockdown/lockdown,baseband_guard/ } }' security/Kconfig
+            echo "CONFIG_BBG=y" >> "$CONFIG_FILE"
             echo "::endgroup::"
         fi
 
@@ -390,39 +401,39 @@ runs:
          fi
 
          if [ "${{ inputs.disable_fst }}" == "true" ]; then
-             grep -q "CONFIG_CC_STACKPROTECTOR_STRONG=y" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}" || sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/g' arch/${{ inputs.arch }}/configs/${{ inputs.config }}
+             grep -q "CONFIG_CC_STACKPROTECTOR_STRONG=y" "$CONFIG_FILE" || sed -i 's/CONFIG_CC_STACKPROTECTOR_STRONG=y/# CONFIG_CC_STACKPROTECTOR_STRONG is not set/g' "$CONFIG_FILE"
          fi
 
          if [ "${{ inputs.disable_cc_werror }}" == "true" ]; then
-             grep -q "CONFIG_CC_WERROR=n" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}" || echo "CONFIG_CC_WERROR=n" | tee -a arch/${{ inputs.arch }}/configs/${{ inputs.config }} >/dev/null
+             grep -q "CONFIG_CC_WERROR=n" "$CONFIG_FILE" || echo "CONFIG_CC_WERROR=n" | tee -a "$CONFIG_FILE" >/dev/null
          fi
 
          if [ "${{ inputs.kprobes }}" == "true" ]; then
-             grep -q "CONFIG_MODULES=y" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}" || echo "CONFIG_MODULES=y" | tee -a arch/${{ inputs.arch }}/configs/${{ inputs.config }} >/dev/null
-             grep -q "CONFIG_KPROBES=y" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}" || echo "CONFIG_KPROBES=y" | tee -a arch/${{ inputs.arch }}/configs/${{ inputs.config }} >/dev/null
-             grep -q "CONFIG_HAVE_KPROBES=y" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}" || echo "CONFIG_HAVE_KPROBES=y" | tee -a arch/${{ inputs.arch }}/configs/${{ inputs.config }} >/dev/null
-             grep -q "CONFIG_KPROBE_EVENTS=y" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}" || echo "CONFIG_KPROBE_EVENTS=y" | tee -a arch/${{ inputs.arch }}/configs/${{ inputs.config }} >/dev/null
+             grep -q "CONFIG_MODULES=y" "$CONFIG_FILE" || echo "CONFIG_MODULES=y" | tee -a "$CONFIG_FILE" >/dev/null
+             grep -q "CONFIG_KPROBES=y" "$CONFIG_FILE" || echo "CONFIG_KPROBES=y" | tee -a "$CONFIG_FILE" >/dev/null
+             grep -q "CONFIG_HAVE_KPROBES=y" "$CONFIG_FILE" || echo "CONFIG_HAVE_KPROBES=y" | tee -a "$CONFIG_FILE" >/dev/null
+             grep -q "CONFIG_KPROBE_EVENTS=y" "$CONFIG_FILE" || echo "CONFIG_KPROBE_EVENTS=y" | tee -a "$CONFIG_FILE" >/dev/null
          fi
 
         if [ "${{ inputs.disable-lto }}" == "true" ]; then
             if grep -q "LTO" "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"; then
-                sed -i 's/CONFIG_LTO=y/CONFIG_LTO=n/' "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
-                sed -i 's/CONFIG_LTO_CLANG=y/CONFIG_LTO_CLANG=n/' "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
-                sed -i 's/CONFIG_THINLTO=y/CONFIG_THINLTO=n/' "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
-                echo "CONFIG_LTO_NONE=y" >> "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
+                sed -i 's/CONFIG_LTO=y/CONFIG_LTO=n/' "$CONFIG_FILE"
+                sed -i 's/CONFIG_LTO_CLANG=y/CONFIG_LTO_CLANG=n/' "$CONFIG_FILE"
+                sed -i 's/CONFIG_THINLTO=y/CONFIG_THINLTO=n/' "$CONFIG_FILE"
+                echo "CONFIG_LTO_NONE=y" >> "$CONFIG_FILE"
             fi
         fi
 
         if [ "${{ inputs.kvm }}" == "true" ]; then
-            echo "CONFIG_VIRTUALIZATION=y" >> "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
-            echo "CONFIG_KVM=y" >> "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
-            echo "CONFIG_KVM_MMIO=y" >> "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
-            echo "CONFIG_KVM_ARM_HOST=y" >> "arch/${{ inputs.arch }}/configs/${{ inputs.config }}"
+            echo "CONFIG_VIRTUALIZATION=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KVM=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KVM_MMIO=y" >> "$CONFIG_FILE"
+            echo "CONFIG_KVM_ARM_HOST=y" >> "$CONFIG_FILE"
         fi
 
         if [ "${{ inputs.lxc }}" == "true" ]; then
             echo "::group::Enabling LXC"
-            aria2c https://github.com/dabao1955/kernel_build_action/raw/main/lxc/config.sh && bash config.sh arch/${{ inputs.arch }}/configs/${{ inputs.config }} -w
+            aria2c https://github.com/dabao1955/kernel_build_action/raw/main/lxc/config.sh && bash config.sh "$CONFIG_FILE" -w
             if [ "${{ inputs.lxc-patch }}" == "true" ]; then
                 curl -SsL https://github.com/Fyg369/Kernel-Action/raw/main/patch/lxc.sh | bash
             fi
